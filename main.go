@@ -9,14 +9,27 @@ import (
 	"time"
 )
 
-type Commit struct {
+// CommitEntry accepts both JSON shapes emitted by different gh versions:
+//   flat (newer):   {"committedDate": "..."}
+//   wrapped (older): {"commit": {"committedDate": "..."}}
+type CommitEntry struct {
 	CommittedDate string `json:"committedDate"`
+	Commit        struct {
+		CommittedDate string `json:"committedDate"`
+	} `json:"commit"`
+}
+
+func (e CommitEntry) date() string {
+	if e.CommittedDate != "" {
+		return e.CommittedDate
+	}
+	return e.Commit.CommittedDate
 }
 
 type PR struct {
-	Number  int      `json:"number"`
-	Title   string   `json:"title"`
-	Commits []Commit `json:"commits"`
+	Number  int           `json:"number"`
+	Title   string        `json:"title"`
+	Commits []CommitEntry `json:"commits"`
 }
 
 func main() {
@@ -45,7 +58,7 @@ func main() {
 	dayMap := map[string][]time.Time{}
 
 	for _, c := range pr.Commits {
-		t, err := time.Parse(time.RFC3339, c.CommittedDate)
+		t, err := time.Parse(time.RFC3339, c.date())
 		if err != nil {
 			continue
 		}
