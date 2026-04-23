@@ -55,19 +55,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	dayMap := map[string][]time.Time{}
-
-	for _, c := range pr.Commits {
-		t, err := time.Parse(time.RFC3339, c.date())
-		if err != nil {
-			continue
-		}
-
-		dayKey := t.Format("2006-01-02")
-		dayMap[dayKey] = append(dayMap[dayKey], t)
-	}
-
-	var total time.Duration
+	dayMap := groupByDay(pr.Commits)
 
 	keys := make([]string, 0, len(dayMap))
 	for k := range dayMap {
@@ -77,26 +65,32 @@ func main() {
 
 	fmt.Printf("#%d %s\n\n", pr.Number, pr.Title)
 
+	var total time.Duration
 	for _, day := range keys {
 		times := dayMap[day]
-		sort.Slice(times, func(i, j int) bool {
-			return times[i].Before(times[j])
-		})
+		sort.Slice(times, func(i, j int) bool { return times[i].Before(times[j]) })
 
-		first := times[0]
-		last := times[len(times)-1]
+		first, last := times[0], times[len(times)-1]
 		diff := last.Sub(first)
 		total += diff
 
-		fmt.Printf("%s  %s - %s  (%s)\n",
-			day,
-			first.Format("15:04"),
-			last.Format("15:04"),
-			formatDuration(diff),
-		)
+		fmt.Printf("%s  %s - %s  (%s)\n", day, first.Format("15:04"), last.Format("15:04"), formatDuration(diff))
 	}
 
 	fmt.Printf("\nTotal active time: %s\n", formatDuration(total))
+}
+
+func groupByDay(commits []CommitEntry) map[string][]time.Time {
+	dayMap := map[string][]time.Time{}
+	for _, c := range commits {
+		t, err := time.Parse(time.RFC3339, c.date())
+		if err != nil {
+			continue
+		}
+		key := t.Format("2006-01-02")
+		dayMap[key] = append(dayMap[key], t)
+	}
+	return dayMap
 }
 
 func formatDuration(d time.Duration) string {
