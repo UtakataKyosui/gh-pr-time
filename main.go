@@ -13,14 +13,10 @@ type Commit struct {
 	CommittedDate string `json:"committedDate"`
 }
 
-type CommitNode struct {
-	Commit Commit `json:"commit"`
-}
-
 type PR struct {
-	Number  int          `json:"number"`
-	Title   string       `json:"title"`
-	Commits []CommitNode `json:"commits"`
+	Number  int      `json:"number"`
+	Title   string   `json:"title"`
+	Commits []Commit `json:"commits"`
 }
 
 func main() {
@@ -49,7 +45,7 @@ func main() {
 	dayMap := map[string][]time.Time{}
 
 	for _, c := range pr.Commits {
-		t, err := time.Parse(time.RFC3339, c.Commit.CommittedDate)
+		t, err := time.Parse(time.RFC3339, c.CommittedDate)
 		if err != nil {
 			continue
 		}
